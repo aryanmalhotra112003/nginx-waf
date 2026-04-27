@@ -1,0 +1,21 @@
+# Task List: Shielding WAF Platform
+
+- [x] **Phase 1: The WAF & Vulnerable App (The Core)**
+  - [x] Outline the folder structure
+  - [x] Create [Dockerfile](file:///home/piyush/Desktop/shielding/waf/Dockerfile) for Nginx WAF with Coroza module
+  - [x] Setup Nginx proxy configuration
+  - [x] Setup Coroza rules configuration (OWASP Top 10)
+  - [x] Create [Dockerfile](file:///home/piyush/Desktop/shielding/waf/Dockerfile) for the vulnerable application
+  - [x] Create Node.js Express application (vulnerable)
+- [ ] **Phase 2: The Landing Page & ROI Calculator**
+  - [ ] Create single-page frontend application
+  - [ ] Implement "Cost Savings Calculator" component
+- [ ] **Phase 3: The Dashboard & Visualizer**
+  - [ ] Create management dashboard (Requests, Blocked, Health)
+  - [ ] Add "Access & Error Logs" view
+  - [ ] Implement Backend/API to parse Nginx logs and sync them
+  - [ ] Implement "Explain with AI" LLM integration
+- [ ] **Phase 4: Management UI & Deployment**
+  - [ ] Add settings page to toggle "Detection Only" / "Active Blocking"
+  - [ ] Create `docker-compose.yml` to stitch WAF, App, API, UI together
+  - [ ] Create `deploy.sh` tailored for Ubuntu AWS EC2

@@ -1,0 +1,73 @@
+# Edge gateway (EC2-A): WAF + API + dashboard.
+# Run from repository root:
+#   docker compose -f deployment/docker-compose.ec2-a.yml up -d --build
+#
+# Paths are relative to this file; ../ points at the repo root.
+
+version: "3.8"
+
+services:
+  waf:
+    build:
+      context: ../waf
+      dockerfile: Dockerfile
+    container_name: waf
+    ports:
+      - "18080:8080"
+    volumes:
+      # Production bridge: nginx.prod.conf in this folder (same as deployment/nginx.prod.conf from repo root)
+      - ./nginx.prod.conf:/config/nginx/nginx.conf:ro
+      - ../waf/coraza.conf:/opt/coraza/config/custom-coraza.conf
+      - ../logs:/var/log/nginx
+    networks:
+      - public_net
+      - internal_net
+    restart: unless-stopped
+
+  api-backend:
+    build:
+      context: ../api-backend
+      dockerfile: Dockerfile
+    container_name: api-backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../api-backend/.env
+    environment:
+      - AUDIT_LOG_PATH=/logs/audit.log
+      - PORT=3000
+      - MAX_ALERTS=50
+      - WAF_CONFIG_PATH=/waf-config/coraza.conf
+      - WAF_CONTAINER_NAME=waf
+    volumes:
+      - ../logs:/logs:ro
+      - ../waf/coraza.conf:/waf-config/coraza.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - internal_net
+    depends_on:
+      - waf
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    env_file:
+      - ../frontend/.env.development
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3000}
+    depends_on:
+      - api-backend
+    networks:
+      - public_net
+    restart: unless-stopped
+
+networks:
+  public_net:
+    driver: bridge
+  internal_net:
+    driver: bridge

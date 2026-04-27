@@ -1,0 +1,15 @@
+# Asset host (EC2-B): vulnerable app only.
+# Run from repository root:
+#   docker compose -f deployment/docker-compose.ec2-b.yml up -d --build
+
+version: "3.8"
+
+services:
+  vulnerable-app:
+    build:
+      context: ../vulnerable-app
+      dockerfile: Dockerfile
+    container_name: vulnerable-app
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

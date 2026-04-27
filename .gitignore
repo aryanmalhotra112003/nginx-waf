@@ -1,0 +1,10 @@
+# .gitignore
+.env
+.env.development
+.env.*
+
+.env
+.env.*
+node_modules/
+logs/
+*.log
