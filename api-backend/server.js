@@ -169,11 +169,7 @@ async function processAppendedChunk(start, end) {
     const alert = parseAuditLine(line);
     if (alert) {
       pushAlert(alert);
-      if (alert.is_critical) {
-        void enrichAlertWithAI(alert);
-      } else {
-        alert.ai_summary = "AI summary skipped: non-critical threat.";
-      }
+      void enrichAlertWithAI(alert);
     }
   }
 }

@@ -37,6 +37,7 @@ services:
       - AUDIT_LOG_PATH=/logs/audit.log
       - PORT=3000
       - MAX_ALERTS=50
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - WAF_CONFIG_PATH=/waf-config/coraza.conf
       - WAF_CONTAINER_NAME=waf
     volumes:
