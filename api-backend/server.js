@@ -6,15 +6,15 @@ const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 const { promisify } = require("util");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const OpenAI = require("openai");
 const execFileAsync = promisify(execFile);
 
 const PORT = Number(process.env.PORT || 3000);
 const MAX_ALERTS = Number(process.env.MAX_ALERTS || 50);
 const AUDIT_LOG_PATH =
   process.env.AUDIT_LOG_PATH || path.resolve(__dirname, "../logs/audit.log");
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const PRIMARY_GEMINI_MODEL = "gemini-2.0-flash";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const PRIMARY_OPENAI_MODEL = "openai/gpt-4o-mini";
 const WAF_CONFIG_PATH = process.env.WAF_CONFIG_PATH || "/waf-config/coraza.conf";
 const WAF_CONTAINER_NAME = process.env.WAF_CONTAINER_NAME || "waf";
 const VALID_WAF_MODES = new Set(["On", "DetectionOnly"]);
@@ -31,12 +31,15 @@ const CRITICAL_THREAT_KEYWORDS = [
 
 const alerts = [];
 let filePosition = 0;
-let genAI = null;
+let openai = null;
 
-if (GEMINI_API_KEY) {
-  genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+if (OPENAI_API_KEY) {
+  openai = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: OPENAI_API_KEY
+  });
 } else {
-  console.warn("GEMINI_API_KEY is not set. Falling back to default summaries.");
+  console.warn("OPENAI_API_KEY is not set. Falling back to default summaries.");
 }
 
 function pushAlert(alert) {
@@ -97,8 +100,8 @@ function parseAuditLine(line) {
 }
 
 async function generateAISummary(uri, messages) {
-  if (!genAI) {
-    return "AI summary unavailable: GEMINI_API_KEY is not configured.";
+  if (!openai) {
+    return "AI summary unavailable: OPENAI_API_KEY is not configured.";
   }
 
   const cleanUri = uri || "(missing uri)";
@@ -114,9 +117,11 @@ async function generateAISummary(uri, messages) {
     `OWASP messages: ${cleanMessages}`
   ].join("\n");
 
-  const model = genAI.getGenerativeModel({ model: PRIMARY_GEMINI_MODEL });
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const result = await openai.chat.completions.create({
+    model: PRIMARY_OPENAI_MODEL,
+    messages: [{ role: "user", content: prompt }]
+  });
+  const text = (result.choices[0]?.message?.content || "").trim();
 
   if (!text) {
     return "AI summary unavailable: empty response from model.";
@@ -126,6 +131,9 @@ async function generateAISummary(uri, messages) {
 }
 
 function isRateLimitError(error) {
+  if (error && Number(error.status) === 429) {
+    return true;
+  }
   const message = (error && error.message ? String(error.message) : "").toLowerCase();
   return message.includes("429") || message.includes("quota") || message.includes("rate limit");
 }
@@ -135,7 +143,7 @@ async function enrichAlertWithAI(alert) {
     const summary = await generateAISummary(alert.uri, alert.messages);
     alert.ai_summary = summary;
   } catch (error) {
-    console.error("Gemini enrichment error:", error);
+    console.error("OpenAI enrichment error:", error);
     if (isRateLimitError(error)) {
       alert.ai_summary = "API Rate Limit Exceeded - Please wait a minute";
       return;
