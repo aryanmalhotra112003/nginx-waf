@@ -1,0 +1,35 @@
+%% Local Zero-Trust Docker Architecture
+%% Generate PNG/SVG: ./scripts/export-mermaid-diagrams.sh
+flowchart TB
+  subgraph Internet["Public Internet"]
+    UA["Users / Attackers"]
+  end
+
+  UA -->|"HTTP only<br/>localhost:18080"| WAF["Edge Gateway<br/>NGINX + Coraza WAF<br/>(container: waf)<br/>only published entry"]
+
+  subgraph Host["Docker host"]
+    subgraph Pub["public_net bridge"]
+      FE["React dashboard (Vite)<br/>localhost:5173"]
+    end
+
+    subgraph Int["internal_net bridge — isolated"]
+      VA["Vulnerable Node.js app<br/>no host port mapping<br/>:3000 only inside Docker"]
+      API["AI backend (Express)<br/>localhost:3000 → /api"]
+    end
+
+    LOGS[("Bind mount volume<br/>./logs ↔ audit.log")]
+
+    WAF -->|"reverse proxy<br/>not exposed on host"| VA
+    WAF -->|"JSON audit write"| LOGS
+    API -->|"tail / parse (read-only mount)"| LOGS
+    FE -->|"GET /api/alerts (JSON)"| API
+  end
+
+  API -->|"HTTPS (OpenAI SDK)<br/>chat completions"| OR["OpenRouter / LLM<br/>external SaaS API"]
+
+  classDef edge fill:#1e3a5f,color:#fff,stroke:#2c5282
+  classDef internal fill:#276749,color:#fff,stroke:#2f855a
+  classDef external fill:#744210,color:#fff,stroke:#975a16
+  class WAF edge
+  class VA,Int internal
+  class OR external

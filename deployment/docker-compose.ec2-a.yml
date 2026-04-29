@@ -12,6 +12,7 @@ services:
       context: ../waf
       dockerfile: Dockerfile
     container_name: waf
+    user: "101:101"
     ports:
       - "18080:8080"
     volumes:

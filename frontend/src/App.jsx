@@ -123,7 +123,11 @@ function App() {
           return;
         }
         setAlerts(Array.isArray(data.alerts) ? data.alerts : []);
-        setCount(Number.isFinite(data.count) ? data.count : 0);
+        // Backend filters benign audit lines; count / blocked_attack_count = malicious/security events only.
+        const blockedTotal = Number.isFinite(data.blocked_attack_count)
+          ? data.blocked_attack_count
+          : data.count;
+        setCount(Number.isFinite(blockedTotal) ? blockedTotal : 0);
         setError("");
         setApiHealthy(true);
         setLastSuccessAt(new Date());
@@ -173,6 +177,7 @@ function App() {
     };
   }, []);
 
+  // Same rolling count as "Total Attacks Blocked" — backend sends only blocked/threat events.
   const computeWastePrevented = useMemo(
     () => count * EDGE_BLOCKING_SAVINGS_PER_ATTACK,
     [count]
@@ -257,7 +262,9 @@ function App() {
       })
       .join(" ");
   }, [attackSurface]);
-  const threatCountLabel = loading ? "Loading..." : `${filteredAlerts.length} / ${alerts.length} alerts`;
+  const threatCountLabel = loading
+    ? "Loading..."
+    : `${filteredAlerts.length} / ${alerts.length} blocked events`;
   const rootThemeClass = "min-h-screen bg-[#0F172A] text-slate-100";
   const panelClass = "border-slate-700/80 bg-slate-900/55 shadow-black/35 backdrop-blur-xl";
   const subtleTextClass = "text-slate-300";
@@ -388,6 +395,9 @@ function App() {
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <article className={`rounded-2xl border p-5 shadow-lg ${panelClass}`}>
             <p className={`text-sm ${subtleTextClass}`}>Total Attacks Blocked</p>
+            <p className={`mt-1 text-xs ${theme === "dark" ? "text-slate-500" : "text-slate-700"}`}>
+              WAF-blocked and rule-triggered events (benign traffic excluded)
+            </p>
             <p className="mt-2 text-3xl font-bold text-emerald-400">{count.toLocaleString()}</p>
                 <div className={`mt-4 h-8 w-full rounded-md ${theme === "dark" ? "bg-slate-800" : "bg-slate-200"}`} />
               </article>

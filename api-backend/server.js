@@ -69,6 +69,28 @@ function extractMessage(rawMessage) {
   return null;
 }
 
+/**
+ * Only ingest security-relevant events (blocked/interrupted/throttled or rule messages).
+ * Benign audit lines (e.g. HTTP 200 with no rule hits) are dropped to avoid LLM cost.
+ */
+function shouldIngestSecurityEvent(parsed, extractedMessages) {
+  if (extractedMessages.length > 0) {
+    return true;
+  }
+
+  const tx = parsed.transaction || {};
+  if (tx.is_interrupted === true) {
+    return true;
+  }
+
+  const status = Number(tx.response?.status);
+  if (status === 403 || status === 429) {
+    return true;
+  }
+
+  return false;
+}
+
 function parseAuditLine(line) {
   if (!line || !line.trim()) {
     return null;
@@ -84,6 +106,11 @@ function parseAuditLine(line) {
   const tx = parsed.transaction || {};
   const messages = Array.isArray(parsed.messages) ? parsed.messages : [];
   const extractedMessages = messages.map(extractMessage).filter(Boolean);
+
+  if (!shouldIngestSecurityEvent(parsed, extractedMessages)) {
+    return null;
+  }
+
   const loweredMessageBlob = extractedMessages.join(" ").toLowerCase();
   const isCriticalThreat = CRITICAL_THREAT_KEYWORDS.some((keyword) =>
     loweredMessageBlob.includes(keyword)
@@ -139,6 +166,12 @@ function isRateLimitError(error) {
 }
 
 async function enrichAlertWithAI(alert) {
+  if (!Array.isArray(alert.messages) || alert.messages.length === 0) {
+    alert.ai_summary =
+      "WAF blocked or throttled this request (no rule messages extracted from audit line).";
+    return;
+  }
+
   try {
     const summary = await generateAISummary(alert.uri, alert.messages);
     alert.ai_summary = summary;
@@ -259,7 +292,9 @@ app.use((req, res, next) => {
 
 app.get("/api/alerts", (req, res) => {
   res.json({
+    // Security-relevant events only (benign traffic is filtered at ingest).
     count: alerts.length,
+    blocked_attack_count: alerts.length,
     alerts
   });
 });

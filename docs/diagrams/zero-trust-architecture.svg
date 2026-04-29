@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 640" width="920" height="640">
+  <defs>
+    <style type="text/css"><![CDATA[
+      .title { font: bold 16px system-ui, sans-serif; fill: #1a202c; }
+      .label { font: 12px system-ui, sans-serif; fill: #2d3748; }
+      .small { font: 11px system-ui, sans-serif; fill: #4a5568; }
+      .box-int { fill: #276749; stroke: #2f855a; stroke-width: 2; }
+      .box-edge { fill: #1e3a5f; stroke: #2c5282; stroke-width: 2; }
+      .box-ext { fill: #744210; stroke: #975a16; stroke-width: 2; }
+      .box-net { fill: #edf2f7; stroke: #a0aec0; stroke-width: 1.5; }
+      .box-vol { fill: #faf5ff; stroke: #805ad5; stroke-width: 1.5; }
+      .txt-light { fill: #f7fafc; font: 11px system-ui, sans-serif; }
+      .txt-dark { fill: #1a202c; font: 11px system-ui, sans-serif; }
+      .arrow { stroke: #2d3748; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dash { stroke: #718096; stroke-width: 1.5; stroke-dasharray: 6 4; fill: none; marker-end: url(#arrowhead-gray); }
+    ]]></style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#2d3748"/>
+    </marker>
+    <marker id="arrowhead-gray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#718096"/>
+    </marker>
+  </defs>
+
+  <text x="460" y="28" text-anchor="middle" class="title">Local Zero-Trust Docker Architecture</text>
+
+  <!-- Internet -->
+  <rect x="360" y="48" width="200" height="52" rx="8" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+  <text x="460" y="68" text-anchor="middle" class="label">Public Internet</text>
+  <text x="460" y="88" text-anchor="middle" class="small">Users / Attackers ’ localhost:18080 only</text>
+
+  <!-- WAF -->
+  <rect x="330" y="130" width="260" height="72" rx="8" class="box-edge"/>
+  <text x="460" y="155" text-anchor="middle" class="txt-light" font-weight="bold">Edge Gateway</text>
+  <text x="460" y="172" text-anchor="middle" class="txt-light">NGINX + Coraza WAF (waf)</text>
+  <text x="460" y="190" text-anchor="middle" class="txt-light">Only public entry (published port)</text>
+
+  <line x1="460" y1="100" x2="460" y2="130" class="arrow"/>
+
+  <!-- Docker host -->
+  <rect x="40" y="230" width="840" height="380" rx="10" fill="#f7fafc" stroke="#cbd5e0" stroke-width="2"/>
+  <text x="60" y="252" class="label" font-weight="bold">Docker host</text>
+
+  <!-- public_net -->
+  <rect x="60" y="268" width="280" height="200" rx="8" class="box-net"/>
+  <text x="200" y="288" text-anchor="middle" class="label" font-weight="bold">public_net</text>
+  <rect x="80" y="302" width="240" height="78" rx="6" fill="#fff" stroke="#4299e1" stroke-width="2"/>
+  <text x="200" y="328" text-anchor="middle" class="label">React dashboard (Vite)</text>
+  <text x="200" y="348" text-anchor="middle" class="small">localhost:5173</text>
+  <text x="200" y="368" text-anchor="middle" class="small">GET /api/alerts (JSON)</text>
+
+  <!-- internal_net -->
+  <rect x="380" y="268" width="480" height="320" rx="8" class="box-net"/>
+  <text x="620" y="288" text-anchor="middle" class="label" font-weight="bold">internal_net (isolated)</text>
+
+  <rect x="400" y="302" width="200" height="88" rx="6" class="box-int"/>
+  <text x="500" y="328" text-anchor="middle" class="txt-light" font-weight="bold">Vulnerable Node.js app</text>
+  <text x="500" y="348" text-anchor="middle" class="txt-light">No host ports</text>
+  <text x="500" y="368" text-anchor="middle" class="txt-light">:3000 internal only</text>
+
+  <rect x="620" y="302" width="220" height="88" rx="6" fill="#2c5282" stroke="#2b6cb0" stroke-width="2"/>
+  <text x="730" y="328" text-anchor="middle" fill="#f7fafc" font-weight="bold" font-size="11px" font-family="system-ui,sans-serif">AI backend (Express)</text>
+  <text x="730" y="348" text-anchor="middle" fill="#f7fafc" font-size="11px" font-family="system-ui,sans-serif">localhost:3000 /api</text>
+  <text x="730" y="368" text-anchor="middle" fill="#edf2f7" font-size="10px" font-family="system-ui,sans-serif">tails audit.log (read-only)</text>
+
+  <!-- Volume -->
+  <rect x="400" y="420" width="440" height="72" rx="6" class="box-vol"/>
+  <text x="620" y="448" text-anchor="middle" class="label" font-weight="bold">Bind mount: ./logs ” audit.log</text>
+  <text x="620" y="468" text-anchor="middle" class="small">WAF writes JSON audit; backend parses</text>
+
+  <!-- OpenRouter -->
+  <rect x="320" y="540" width="280" height="56" rx="8" class="box-ext"/>
+  <text x="460" y="562" text-anchor="middle" class="txt-light" font-weight="bold">OpenRouter / LLM</text>
+  <text x="460" y="580" text-anchor="middle" class="txt-light" font-size="10px">External API (HTTPS)</text>
+
+  <!-- Arrows -->
+  <path d="M 460 202 L 460 210 L 200 210 L 200 268" class="dash"/>
+  <text x="210" y="238" class="small">WAF on both bridges</text>
+
+  <path d="M 460 202 L 460 220 L 500 220 L 500 302" class="arrow"/>
+  <text x="520" y="238" class="small">reverse proxy</text>
+
+  <path d="M 460 202 L 620 240 L 730 240 L 730 302" class="arrow"/>
+  <text x="640" y="228" class="small">same host</text>
+
+  <path d="M 500 390 L 500 410 L 620 410 L 620 420" class="arrow"/>
+  <path d="M 730 390 L 730 410 L 660 410" class="arrow"/>
+
+  <line x1="320" y1="380" x2="200" y2="380" class="arrow"/>
+  <text x="240" y="372" class="small">JSON poll</text>
+
+  <line x1="730" y1="390" x2="460" y2="520" class="arrow"/>
+  <text x="580" y="455" class="small">OpenAI SDK ’</text>
+</svg>
